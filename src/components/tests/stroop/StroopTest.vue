@@ -24,7 +24,7 @@ const PHASES: PhaseConfig[] = [
   {
     name: "Cartão A",
     instruction: "Arraste cada peça de roupa para o compartimento correto do guarda-roupa.",
-    trials: 2,
+    trials: 24,
     showColor: false,
     shuffleSlots: false,
     randomizeColors: false,
@@ -33,7 +33,7 @@ const PHASES: PhaseConfig[] = [
     name: "Cartão B",
     instruction:
       "Agora os compartimentos têm cores. Continue arrastando as peças para o compartimento correto baseado no NOME da peça, não na cor!",
-    trials: 2,
+    trials: 24,
     showColor: true,
     shuffleSlots: false,
     randomizeColors: false,
@@ -42,7 +42,7 @@ const PHASES: PhaseConfig[] = [
     name: "Cartão C",
     instruction:
       "As cores dos compartimentos mudam a cada rodada. Continue focando no NOME da peça, não na cor!",
-    trials: 2,
+    trials: 24,
     showColor: true,
     shuffleSlots: true,
     randomizeColors: true,
