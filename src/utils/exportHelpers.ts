@@ -283,51 +283,214 @@ export function generatePDF(results: TestResult) {
 }
 
 export function generateCSV(results: TestResult) {
-    let csv = '';
-    const mapName = { 'cartao_a': 'Cartão A', 'cartao_b': 'Cartão B', 'cartao_c': 'Cartão C' };
+  let csv = '';
+  const mapName = { 'cartao_a': 'Cartão A', 'cartao_b': 'Cartão B', 'cartao_c': 'Cartão C' };
 
-    csv += 'TESTE PSICOLÓGICO DE STROOP - ROUPAS\n';
-    csv += `Nome:,${results.participant.name}\n`;
-    csv += `Idade:,${results.participant.age}\n`;
-    csv += `Data:,${new Date(results.testDate).toLocaleString('pt-BR')}\n\n`;
+  csv += 'TESTE PSICOLÓGICO DE STROOP - ROUPAS\n';
+  csv += `Nome:,${results.participant.name}\n`;
+  csv += `Idade:,${results.participant.age}\n`;
+  csv += `Data:,${new Date(results.testDate).toLocaleString('pt-BR')}\n\n`;
 
-    csv += 'ANÁLISE E INTERPRETAÇÃO\n';
-    // Remove quebras de linha HTML para o CSV
-    csv += `"${results.analysis?.interpretationText || ''}"\n\n`;
+  csv += 'ANÁLISE E INTERPRETAÇÃO\n';
+  csv += `"${results.analysis?.interpretationText || ''}"\n\n`;
 
-    csv += 'RESUMO GERAL\n';
-    csv += `Acurácia (%),${results.summary.overallAccuracy}\n`;
-    csv += `Tempo Médio (ms),${results.summary.overallAverageResponseTime}\n\n`;
+  csv += 'RESUMO GERAL\n';
+  csv += `Acurácia (%),${results.summary.overallAccuracy}\n`;
+  csv += `Tempo Médio (ms),${results.summary.overallAverageResponseTime}\n\n`;
 
-    csv += 'RESULTADOS POR FASE\n';
-    csv += 'Fase,Tentativas,Acertos,Erros,Acurácia (%),Tempo Médio (ms)\n';
-    Object.keys(results.phaseResults).forEach(key => {
-        const p = results.phaseResults[key];
-        csv += `${mapName[key as keyof typeof mapName] || p.phase},${p.totalTrials},${p.correctResponses},${p.incorrectResponses},${p.accuracy},${p.averageResponseTime}\n`;
-    });
-    csv += '\n';
+  csv += 'RESULTADOS POR FASE\n';
+  csv += 'Fase,Tentativas,Acertos,Erros,Acurácia (%),Tempo Médio (ms)\n';
+  Object.keys(results.phaseResults).forEach(key => {
+    const p = results.phaseResults[key];
+    csv += `${mapName[key as keyof typeof mapName] || p.phase},${p.totalTrials},${p.correctResponses},${p.incorrectResponses},${p.accuracy},${p.averageResponseTime}\n`;
+  });
+  csv += '\n';
 
-    csv += 'DADOS BRUTOS\n';
-    csv += 'Fase,Tentativa,Item,Cor,Escolha,Correto,Tempo(ms)\n';
-    results.responses.forEach(r => {
-        csv += `${r.phaseName},${r.trial},${r.itemPresented},${r.colorPresented},${r.compartmentChosen},${r.correct ? 'Sim' : 'Não'},${r.responseTime}\n`;
-    });
+  csv += 'DADOS BRUTOS\n';
+  csv += 'Fase,Tentativa,Item,Cor,Escolha,Correto,Tempo(ms)\n';
+  results.responses.forEach(r => {
+    csv += `${r.phaseName},${r.trial},${r.itemPresented},${r.colorPresented},${r.compartmentChosen},${r.correct ? 'Sim' : 'Não'},${r.responseTime}\n`;
+  });
 
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `teste_stroop_${results.participant.name.replace(/\s/g, '_')}_${Date.now()}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `teste_stroop_${results.participant.name.replace(/\s/g, '_')}_${Date.now()}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 export function generateJSON(results: TestResult) {
-    const json = JSON.stringify(results, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `teste_stroop_${results.participant.name.replace(/\s/g, '_')}_${Date.now()}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+  const json = JSON.stringify(results, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `teste_stroop_${results.participant.name.replace(/\s/g, '_')}_${Date.now()}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function renderSticksToImage(sticks: any[]): string {
+  if (typeof document === 'undefined') return '';
+  const canvas = document.createElement('canvas');
+  canvas.width = 150;
+  canvas.height = 150;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return '';
+
+  const stickLength = 85;
+  const stickWidth = 8;
+  const headRadius = 10;
+
+  let minX = Infinity, maxX = -Infinity
+  let minY = Infinity, maxY = -Infinity
+  sticks.forEach(s => {
+    const rad = (90 - s.angle) * Math.PI / 180
+    const tailX = s.x - stickLength * Math.sin(rad)
+    const tailY = s.y + stickLength * Math.cos(rad)
+    minX = Math.min(minX, s.x, tailX)
+    maxX = Math.max(maxX, s.x, tailX)
+    minY = Math.min(minY, s.y, tailY)
+    maxY = Math.max(maxY, s.y, tailY)
+  })
+
+  const padding = 20
+  const contentWidth = maxX - minX
+  const contentHeight = maxY - minY
+  const scaleX = (canvas.width - padding * 2) / (contentWidth || 1)
+  const scaleY = (canvas.height - padding * 2) / (contentHeight || 1)
+  const scale = Math.min(scaleX, scaleY, 1)
+
+  ctx.scale(scale, scale);
+  const centerX = (minX + maxX) / 2
+  const centerY = (minY + maxY) / 2
+  const offsetX = (canvas.width / 2) / scale - centerX;
+  const offsetY = (canvas.height / 2) / scale - centerY;
+
+  sticks.forEach((stick) => {
+    ctx.save();
+    ctx.translate(stick.x + offsetX, stick.y + offsetY);
+    ctx.rotate(((90 - stick.angle) * Math.PI) / 180);
+
+    ctx.fillStyle = '#d4a373';
+    ctx.beginPath();
+    ctx.roundRect(-stickWidth / 2, 0, stickWidth, stickLength, 5);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(0,0,0,0.1)';
+    ctx.beginPath();
+    ctx.roundRect(-stickWidth / 2 + 2, 2, stickWidth - 4, stickLength - 4, 3);
+    ctx.fill();
+
+    ctx.fillStyle = '#e63946';
+    ctx.beginPath();
+    ctx.ellipse(0, -2, headRadius - 2, headRadius + 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.beginPath();
+    ctx.ellipse(-3, -4, headRadius / 3, headRadius / 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  });
+
+  return canvas.toDataURL('image/png');
+}
+
+function getPhaseDescriptions(phaseId: string) {
+  switch (phaseId) {
+    case 'quadrado': return { config: "Figura de quatro lados está presente", pos: "Figura repousa sobre um dos lados", detail: "Cabeças estão orientadas corretamente" };
+    case 'triangulo': return { config: "Figura de três lados está presente", pos: "A base do triângulo é a mais próxima ao participante", detail: "Cabeças estão orientadas corretamente" };
+    case 'v': return { config: "Palitos formam um ângulo em forma de \"V\"", pos: "Ponto do Ápice estão para fora do participante", detail: "Cabeças estão orientadas corretamente" };
+    case 'arvore': return { config: "Palitos do meio são alinhados da cabeça para os pés", pos: "Os palitos laterais fazem um ângulo para fora, partindo da cabeça do fósforo inferior", detail: "Cabeças estão orientadas corretamente" };
+    default: return { config: "", pos: "", detail: "" };
+  }
+}
+
+export function generateMatchstickPDF(participant: Participant, phaseResults: any[]) {
+  const doc = new jsPDF();
+
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text("Teste do Palito", 105, 20, { align: "center" });
+
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "normal");
+  let yPos = 30;
+
+  doc.text(`Nome: ${participant.name}`, 20, yPos);
+  doc.text(`Idade: ${participant.age} anos`, 120, yPos);
+  yPos += 6;
+  doc.text(`Gênero: ${participant.gender}`, 20, yPos);
+  doc.text(`Escolaridade: ${participant.education}`, 120, yPos);
+  yPos += 6;
+  doc.text(`Data da Aplicação: ${new Date().toLocaleString("pt-BR")}`, 20, yPos);
+  yPos += 10;
+
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("Folha de Registro", 105, yPos, { align: "center" });
+  yPos += 6;
+
+  const tableData = phaseResults.map((r) => {
+    const configPt = r.evalResult.config;
+    const posPt = r.evalResult.position;
+    const detailPt = r.evalResult.detail;
+    const totalPt = r.evalResult.total;
+    const descs = getPhaseDescriptions(r.phase);
+
+    return [
+      `\n\n\n\n\n\nTempo: ${(r.timeMs / 1000).toFixed(1)}s`,
+      `${descs.config}\n\n___ (${configPt}pt)`,
+      `${descs.pos}\n\n___ (${posPt}pt)`,
+      `${descs.detail}\n\n___ (${detailPt}pt)`,
+      `\n\n___ (${totalPt}pts)`
+    ];
+  });
+
+  const totalConfig = phaseResults.reduce((acc, r) => acc + r.evalResult.config, 0);
+  const totalPos = phaseResults.reduce((acc, r) => acc + r.evalResult.position, 0);
+  const totalDetail = phaseResults.reduce((acc, r) => acc + r.evalResult.detail, 0);
+  const totalGeral = phaseResults.reduce((acc, r) => acc + r.evalResult.total, 0);
+
+  tableData.push([
+    "Total por etapa",
+    `Configuração\n___ (${totalConfig}pts)`,
+    `Posicionamento\n___ (${totalPos}pts)`,
+    `Detalhe\n___ (${totalDetail}pts)`,
+    `Total Geral\n___ (${totalGeral}pts)`
+  ]);
+
+  autoTable(doc, {
+    startY: yPos,
+    head: [["Figura", "Config.", "Posicionamento", "Detalhe", "Total"]],
+    body: tableData,
+    theme: "grid",
+    headStyles: { fillColor: [102, 126, 234], textColor: 255 },
+    styles: { valign: 'middle', halign: 'center', fontSize: 9 },
+    columnStyles: { 0: { cellWidth: 35 }, 4: { cellWidth: 25 } },
+    didParseCell: function (data) {
+      if (data.section === 'body') {
+        data.cell.styles.minCellHeight = 42;
+      }
+    },
+    didDrawCell: function (data) {
+      if (data.column.index === 0 && data.cell.section === 'body') {
+        if (data.row.index < phaseResults.length) {
+          const phaseResult = phaseResults[data.row.index];
+          if (phaseResult && phaseResult.finalSticks) {
+            const imgData = renderSticksToImage(phaseResult.finalSticks);
+            if (imgData) {
+              doc.addImage(imgData, 'PNG', data.cell.x + 2, data.cell.y + 2, 31, 31);
+            }
+          }
+        }
+      }
+    }
+  });
+
+  const filename = `teste_palito_${participant.name.replace(/\s/g, "_")}_${Date.now()}.pdf`;
+  doc.save(filename);
 }

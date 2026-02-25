@@ -28,7 +28,6 @@ function handleSubmit() {
 
 <template>
   <div class="form-section card-base fade-in">
-    <h1>Teste Psicológico de Stroop - Roupas</h1>
     <h2>Cadastro do Participante</h2>
 
     <form @submit.prevent="handleSubmit">
