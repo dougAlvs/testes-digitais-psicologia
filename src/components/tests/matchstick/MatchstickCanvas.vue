@@ -32,6 +32,10 @@ let isDragging = false
 let startX = 0
 let startY = 0
 let initialPinchAngle = 0
+let initialPinchCenterX = 0
+let initialPinchCenterY = 0
+let initialStickX = 0
+let initialStickY = 0
 let initialStickAngle = 0
 let isPinching = false
 
@@ -300,7 +304,13 @@ function handleTouchStart(e: TouchEvent) {
     const t1 = e.touches[0]
     const t2 = e.touches[1]
     initialPinchAngle = Math.atan2(t2.clientY - t1.clientY, t2.clientX - t1.clientX) * 180 / Math.PI
+
+    initialPinchCenterX = (t1.clientX + t2.clientX) / 2
+    initialPinchCenterY = (t1.clientY + t2.clientY) / 2
+
     initialStickAngle = localSticks.value[activeStickIndex.value].angle
+    initialStickX = localSticks.value[activeStickIndex.value].x
+    initialStickY = localSticks.value[activeStickIndex.value].y
   } else if (e.touches.length === 1) {
     isPinching = false
     if (canvasRef.value) {
@@ -335,9 +345,22 @@ function handleTouchMove(e: TouchEvent) {
     const t1 = e.touches[0]
     const t2 = e.touches[1]
     const currAngle = Math.atan2(t2.clientY - t1.clientY, t2.clientX - t1.clientX) * 180 / Math.PI
-    const deltaAngle = currAngle - initialPinchAngle
+    let deltaAngle = currAngle - initialPinchAngle
 
-    localSticks.value[activeStickIndex.value].angle = initialStickAngle + deltaAngle
+    while (deltaAngle <= -180) deltaAngle += 360
+    while (deltaAngle > 180) deltaAngle -= 360
+
+    localSticks.value[activeStickIndex.value].angle = initialStickAngle - deltaAngle
+
+    const currCenterX = (t1.clientX + t2.clientX) / 2
+    const currCenterY = (t1.clientY + t2.clientY) / 2
+
+    const dx = currCenterX - initialPinchCenterX
+    const dy = currCenterY - initialPinchCenterY
+
+    localSticks.value[activeStickIndex.value].x = initialStickX + dx
+    localSticks.value[activeStickIndex.value].y = initialStickY + dy
+
     draw()
   } else if (e.touches.length === 1 && isDragging && activeStickIndex.value !== null) {
     if (canvasRef.value) {

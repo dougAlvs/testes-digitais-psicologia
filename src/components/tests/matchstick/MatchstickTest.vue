@@ -137,10 +137,10 @@ const currentPhaseIndex = ref(0)
 const phaseState = ref<'animating' | 'waiting-start' | 'playing'>('animating')
 
 const defaultSticks: MatchstickState[] = [
-  { id: '1', x: -120, y: 150, angle: 90 },
-  { id: '2', x: -40, y: 150, angle: 90 },
-  { id: '3', x: 40, y: 150, angle: 90 },
-  { id: '4', x: 120, y: 150, angle: 90 },
+  { id: '1', x: -75, y: 150, angle: 90 },
+  { id: '2', x: -25, y: 150, angle: 90 },
+  { id: '3', x: 25, y: 150, angle: 90 },
+  { id: '4', x: 75, y: 150, angle: 90 },
 ]
 
 const sticks = ref<MatchstickState[]>([...defaultSticks])
