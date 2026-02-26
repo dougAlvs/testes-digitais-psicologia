@@ -77,13 +77,15 @@ function getOffsets() {
 
     localSticks.value.forEach(s => {
       const rad = (90 - s.angle) * Math.PI / 180
-      const tailX = s.x - stickLength * Math.sin(rad)
-      const tailY = s.y + stickLength * Math.cos(rad)
+      const headX = s.x + (stickLength / 2) * Math.sin(rad)
+      const headY = s.y - (stickLength / 2) * Math.cos(rad)
+      const tailX = s.x - (stickLength / 2) * Math.sin(rad)
+      const tailY = s.y + (stickLength / 2) * Math.cos(rad)
 
-      minX = Math.min(minX, s.x, tailX)
-      maxX = Math.max(maxX, s.x, tailX)
-      minY = Math.min(minY, s.y, tailY)
-      maxY = Math.max(maxY, s.y, tailY)
+      minX = Math.min(minX, headX, tailX)
+      maxX = Math.max(maxX, headX, tailX)
+      minY = Math.min(minY, headY, tailY)
+      maxY = Math.max(maxY, headY, tailY)
     })
 
     const padding = 20
@@ -129,27 +131,27 @@ function draw() {
 
     ctx!.fillStyle = '#d4a373'
     ctx!.beginPath()
-    ctx!.roundRect(-stickWidth / 2, 0, stickWidth, stickLength, 5)
+    ctx!.roundRect(-stickWidth / 2, -stickLength / 2, stickWidth, stickLength, 5)
     ctx!.fill()
     ctx!.fillStyle = 'rgba(0,0,0,0.1)'
     ctx!.beginPath()
-    ctx!.roundRect(-stickWidth / 2 + 2, 2, stickWidth - 4, stickLength - 4, 3)
+    ctx!.roundRect(-stickWidth / 2 + 2, -stickLength / 2 + 2, stickWidth - 4, stickLength - 4, 3)
     ctx!.fill()
 
     ctx!.fillStyle = '#e63946'
     ctx!.beginPath()
-    ctx!.ellipse(0, -2, headRadius - 2, headRadius + 2, 0, 0, Math.PI * 2)
+    ctx!.ellipse(0, -stickLength / 2 - 2, headRadius - 2, headRadius + 2, 0, 0, Math.PI * 2)
     ctx!.fill()
 
     ctx!.fillStyle = 'rgba(255,255,255,0.4)'
     ctx!.beginPath()
-    ctx!.ellipse(-3, -4, headRadius / 3, headRadius / 2, 0, 0, Math.PI * 2)
+    ctx!.ellipse(-3, -stickLength / 2 - 4, headRadius / 3, headRadius / 2, 0, 0, Math.PI * 2)
     ctx!.fill()
 
     if (activeStickIndex.value === index && props.interactive) {
       ctx!.strokeStyle = '#007bff'
       ctx!.lineWidth = 2
-      ctx!.strokeRect(-stickWidth / 2 - 5, -headRadius - 5, stickWidth + 10, stickLength + headRadius + 10)
+      ctx!.strokeRect(-stickWidth / 2 - 5, -stickLength / 2 - headRadius - 5, stickWidth + 10, stickLength + headRadius + 10)
     }
 
     ctx!.restore()
@@ -157,11 +159,9 @@ function draw() {
   ctx!.restore()
 }
 
-function getDistance(x1: number, y1: number, x2: number, y2: number) {
-  return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2))
-}
 
-function getStickAtPosition(logicalX: number, logicalY: number): number | null {
+
+function getStickAtPosition(logicalX: number, logicalY: number, extraPadding = 0): number | null {
   for (let i = localSticks.value.length - 1; i >= 0; i--) {
     const stick = localSticks.value[i]
 
@@ -171,13 +171,13 @@ function getStickAtPosition(logicalX: number, logicalY: number): number | null {
     const localX = dx * Math.cos(-angleRad) - dy * Math.sin(-angleRad)
     const localY = dx * Math.sin(-angleRad) + dy * Math.cos(-angleRad)
 
-    const padding = 15
+    const padding = 25 + extraPadding
 
     if (
       localX >= -stickWidth / 2 - padding &&
       localX <= stickWidth / 2 + padding &&
-      localY >= -headRadius - padding &&
-      localY <= stickLength + padding
+      localY >= -stickLength / 2 - headRadius - padding &&
+      localY <= stickLength / 2 + padding
     ) {
       return i
     }
@@ -298,19 +298,42 @@ function handleTouchStart(e: TouchEvent) {
   if (!props.interactive) return
   emit('interact')
 
-  if (e.touches.length === 2 && activeStickIndex.value !== null) {
+  if (e.touches.length === 2) {
     isPinching = true
     isDragging = false
     const t1 = e.touches[0]
     const t2 = e.touches[1]
-    initialPinchAngle = Math.atan2(t2.clientY - t1.clientY, t2.clientX - t1.clientX) * 180 / Math.PI
 
-    initialPinchCenterX = (t1.clientX + t2.clientX) / 2
-    initialPinchCenterY = (t1.clientY + t2.clientY) / 2
+    let stickIndex = activeStickIndex.value
 
-    initialStickAngle = localSticks.value[activeStickIndex.value].angle
-    initialStickX = localSticks.value[activeStickIndex.value].x
-    initialStickY = localSticks.value[activeStickIndex.value].y
+    if (stickIndex === null && canvasRef.value) {
+      const { offsetX, offsetY } = getOffsets()
+      const rect = canvasRef.value.getBoundingClientRect()
+      const cx = (t1.clientX + t2.clientX) / 2 - rect.left - offsetX
+      const cy = (t1.clientY + t2.clientY) / 2 - rect.top - offsetY
+
+      stickIndex = getStickAtPosition(cx, cy, 50)
+      if (stickIndex !== null) {
+        const stick = localSticks.value.splice(stickIndex, 1)[0]
+        localSticks.value.push(stick)
+        stickIndex = localSticks.value.length - 1
+        activeStickIndex.value = stickIndex
+        draw()
+      }
+    }
+
+    if (stickIndex !== null) {
+      initialPinchAngle = Math.atan2(t2.clientY - t1.clientY, t2.clientX - t1.clientX) * 180 / Math.PI
+
+      initialPinchCenterX = (t1.clientX + t2.clientX) / 2
+      initialPinchCenterY = (t1.clientY + t2.clientY) / 2
+
+      initialStickAngle = localSticks.value[stickIndex].angle
+      initialStickX = localSticks.value[stickIndex].x
+      initialStickY = localSticks.value[stickIndex].y
+    } else {
+      isPinching = false
+    }
   } else if (e.touches.length === 1) {
     isPinching = false
     if (canvasRef.value) {

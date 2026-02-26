@@ -16,26 +16,26 @@ const phases = [
     target: [
       {
         "id": "1",
-        "x": 51,
+        "x": 8,
         "y": 82,
         "angle": 0
       },
       {
         "id": "4",
         "x": 52,
-        "y": -18,
+        "y": 24,
         "angle": 90
       },
       {
         "id": "3",
-        "x": -27,
+        "x": 16,
         "y": -40,
         "angle": 180
       },
       {
         "id": "2",
         "x": -29,
-        "y": 61,
+        "y": 18,
         "angle": -90
       },
     ]
@@ -46,26 +46,26 @@ const phases = [
     target: [
       {
         "id": "2",
-        "x": -16,
-        "y": 26,
+        "x": -37,
+        "y": -11,
         "angle": 300
       },
       {
         "id": "3",
-        "x": 40,
-        "y": -39,
+        "x": 19,
+        "y": -2,
         "angle": 60
       },
       {
         "id": "1",
-        "x": -44,
+        "x": -2,
         "y": -57,
         "angle": 180
       },
       {
         "id": "4",
         "x": -6,
-        "y": -156,
+        "y": -114,
         "angle": 90
       }
     ]
@@ -76,26 +76,26 @@ const phases = [
     target: [
       {
         "id": "1",
-        "x": -104,
-        "y": -36,
+        "x": -83,
+        "y": 1,
         "angle": 120
       },
       {
         "id": "2",
-        "x": -16,
-        "y": 26,
+        "x": -37,
+        "y": -11,
         "angle": 300
       },
       {
         "id": "3",
-        "x": 29,
-        "y": 26,
+        "x": 50,
+        "y": -11,
         "angle": 240
       },
       {
         "id": "4",
-        "x": 115,
-        "y": -36,
+        "x": 94,
+        "y": 1,
         "angle": 60
       }
     ]
@@ -107,26 +107,26 @@ const phases = [
       {
         "id": "3",
         "x": 3,
-        "y": 44,
+        "y": 86,
         "angle": 90
       },
 
       {
         "id": "1",
-        "x": -64,
-        "y": -42,
+        "x": -37,
+        "y": -9,
         "angle": 130
       },
       {
         "id": "2",
         "x": 3,
-        "y": -60,
+        "y": -18,
         "angle": 90
       },
       {
         "id": "4",
-        "x": 69,
-        "y": -42,
+        "x": 42,
+        "y": -9,
         "angle": 50
       },
     ]
@@ -137,10 +137,10 @@ const currentPhaseIndex = ref(0)
 const phaseState = ref<'animating' | 'waiting-start' | 'playing'>('animating')
 
 const defaultSticks: MatchstickState[] = [
-  { id: '1', x: -75, y: 150, angle: 90 },
-  { id: '2', x: -25, y: 150, angle: 90 },
-  { id: '3', x: 25, y: 150, angle: 90 },
-  { id: '4', x: 75, y: 150, angle: 90 },
+  { id: '1', x: -75, y: 192, angle: 90 },
+  { id: '2', x: -25, y: 192, angle: 90 },
+  { id: '3', x: 25, y: 192, angle: 90 },
+  { id: '4', x: 75, y: 192, angle: 90 },
 ]
 
 const sticks = ref<MatchstickState[]>([...defaultSticks])
@@ -161,13 +161,15 @@ function normalizeTarget(rawSticks: MatchstickState[]): MatchstickState[] {
   rawSticks.forEach(s => {
     const rad = (90 - s.angle) * Math.PI / 180
 
-    const tailX = s.x - stickLength * Math.sin(rad)
-    const tailY = s.y + stickLength * Math.cos(rad)
+    const headX = s.x + (stickLength / 2) * Math.sin(rad)
+    const headY = s.y - (stickLength / 2) * Math.cos(rad)
+    const tailX = s.x - (stickLength / 2) * Math.sin(rad)
+    const tailY = s.y + (stickLength / 2) * Math.cos(rad)
 
-    minX = Math.min(minX, s.x, tailX)
-    maxX = Math.max(maxX, s.x, tailX)
-    minY = Math.min(minY, s.y, tailY)
-    maxY = Math.max(maxY, s.y, tailY)
+    minX = Math.min(minX, headX, tailX)
+    maxX = Math.max(maxX, headX, tailX)
+    minY = Math.min(minY, headY, tailY)
+    maxY = Math.max(maxY, headY, tailY)
   })
 
   const centerX = (minX + maxX) / 2
