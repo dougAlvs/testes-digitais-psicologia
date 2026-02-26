@@ -48,7 +48,7 @@ const phases = [
         "id": "2",
         "x": -37,
         "y": -11,
-        "angle": 300
+        "angle": -60
       },
       {
         "id": "3",
@@ -495,6 +495,26 @@ const formattedTime = computed(() => {
 
   to {
     opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .test-container {
+    padding: 10px 5px;
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .canvas-wrapper {
+    border-width: 2px;
+    border-radius: 6px;
+  }
+
+  .game-view {
+    gap: 10px;
   }
 }
 </style>

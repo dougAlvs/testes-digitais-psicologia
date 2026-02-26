@@ -56,7 +56,7 @@ function restartTest() {
 
     <div v-if="currentStep === 'results' && computedResults" class="results-section fade-in">
 
-      <MatchstickReport :results="computedResults" />
+      <MatchstickReport :results="computedResults" @updateResults="computedResults = $event" />
 
       <div style="margin-top: 30px" class="no-print actions-bar">
         <button class="btn btn-success" @click="handleExport">Exportar PDF</button>
@@ -104,7 +104,13 @@ function restartTest() {
 }
 
 .btn {
-  margin: 0 10px;
+  margin: 5px 10px;
+}
+
+@media (max-width: 768px) {
+  .view-wrapper {
+    padding: 10px 0;
+  }
 }
 
 @media print {

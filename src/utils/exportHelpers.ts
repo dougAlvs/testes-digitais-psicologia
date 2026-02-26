@@ -347,12 +347,15 @@ function renderSticksToImage(sticks: any[]): string {
   let minY = Infinity, maxY = -Infinity
   sticks.forEach(s => {
     const rad = (90 - s.angle) * Math.PI / 180
-    const tailX = s.x - stickLength * Math.sin(rad)
-    const tailY = s.y + stickLength * Math.cos(rad)
-    minX = Math.min(minX, s.x, tailX)
-    maxX = Math.max(maxX, s.x, tailX)
-    minY = Math.min(minY, s.y, tailY)
-    maxY = Math.max(maxY, s.y, tailY)
+    const headX = s.x + (stickLength / 2) * Math.sin(rad)
+    const headY = s.y - (stickLength / 2) * Math.cos(rad)
+    const tailX = s.x - (stickLength / 2) * Math.sin(rad)
+    const tailY = s.y + (stickLength / 2) * Math.cos(rad)
+
+    minX = Math.min(minX, headX, tailX)
+    maxX = Math.max(maxX, headX, tailX)
+    minY = Math.min(minY, headY, tailY)
+    maxY = Math.max(maxY, headY, tailY)
   })
 
   const padding = 20
@@ -375,22 +378,22 @@ function renderSticksToImage(sticks: any[]): string {
 
     ctx.fillStyle = '#d4a373';
     ctx.beginPath();
-    ctx.roundRect(-stickWidth / 2, 0, stickWidth, stickLength, 5);
+    ctx.roundRect(-stickWidth / 2, -stickLength / 2, stickWidth, stickLength, 5);
     ctx.fill();
 
     ctx.fillStyle = 'rgba(0,0,0,0.1)';
     ctx.beginPath();
-    ctx.roundRect(-stickWidth / 2 + 2, 2, stickWidth - 4, stickLength - 4, 3);
+    ctx.roundRect(-stickWidth / 2 + 2, -stickLength / 2 + 2, stickWidth - 4, stickLength - 4, 3);
     ctx.fill();
 
     ctx.fillStyle = '#e63946';
     ctx.beginPath();
-    ctx.ellipse(0, -2, headRadius - 2, headRadius + 2, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, -stickLength / 2 - 2, headRadius - 2, headRadius + 2, 0, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
     ctx.beginPath();
-    ctx.ellipse(-3, -4, headRadius / 3, headRadius / 2, 0, 0, Math.PI * 2);
+    ctx.ellipse(-3, -stickLength / 2 - 4, headRadius / 3, headRadius / 2, 0, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
@@ -434,33 +437,40 @@ export function generateMatchstickPDF(participant: Participant, phaseResults: an
   doc.text("Folha de Registro", 105, yPos, { align: "center" });
   yPos += 6;
 
+  const isEmpty = (val: any) => val === '' || val === null || val === undefined;
+
   const tableData = phaseResults.map((r) => {
-    const configPt = r.evalResult.config;
-    const posPt = r.evalResult.position;
-    const detailPt = r.evalResult.detail;
-    const totalPt = r.evalResult.total;
+    const configPt = !isEmpty(r.evalResult.config) ? r.evalResult.config : '___';
+    const posPt = !isEmpty(r.evalResult.position) ? r.evalResult.position : '___';
+    const detailPt = !isEmpty(r.evalResult.detail) ? r.evalResult.detail : '___';
+    const totalPt = !isEmpty(r.evalResult.total) ? r.evalResult.total : '___';
     const descs = getPhaseDescriptions(r.phase);
 
     return [
       `\n\n\n\n\n\nTempo: ${(r.timeMs / 1000).toFixed(1)}s`,
-      `${descs.config}\n\n___ (${configPt}pt)`,
-      `${descs.pos}\n\n___ (${posPt}pt)`,
-      `${descs.detail}\n\n___ (${detailPt}pt)`,
-      `\n\n___ (${totalPt}pts)`
+      `${descs.config}\n\n${configPt} pts`,
+      `${descs.pos}\n\n${posPt} pts`,
+      `${descs.detail}\n\n${detailPt} pts`,
+      `\n\n${totalPt} pts`
     ];
   });
 
-  const totalConfig = phaseResults.reduce((acc, r) => acc + r.evalResult.config, 0);
-  const totalPos = phaseResults.reduce((acc, r) => acc + r.evalResult.position, 0);
-  const totalDetail = phaseResults.reduce((acc, r) => acc + r.evalResult.detail, 0);
-  const totalGeral = phaseResults.reduce((acc, r) => acc + r.evalResult.total, 0);
+  const totalConfig = phaseResults.reduce((acc, r) => acc + (Number(r.evalResult.config) || 0), 0);
+  const totalPos = phaseResults.reduce((acc, r) => acc + (Number(r.evalResult.position) || 0), 0);
+  const totalDetail = phaseResults.reduce((acc, r) => acc + (Number(r.evalResult.detail) || 0), 0);
+  const totalGeral = phaseResults.reduce((acc, r) => acc + (Number(r.evalResult.total) || 0), 0);
+
+  const hasConfig = phaseResults.some(r => !isEmpty(r.evalResult.config));
+  const hasPos = phaseResults.some(r => !isEmpty(r.evalResult.position));
+  const hasDetail = phaseResults.some(r => !isEmpty(r.evalResult.detail));
+  const hasTotal = phaseResults.some(r => !isEmpty(r.evalResult.total));
 
   tableData.push([
     "Total por etapa",
-    `Configuração\n___ (${totalConfig}pts)`,
-    `Posicionamento\n___ (${totalPos}pts)`,
-    `Detalhe\n___ (${totalDetail}pts)`,
-    `Total Geral\n___ (${totalGeral}pts)`
+    `Configuração\n\n${hasConfig ? totalConfig : '___'} pts`,
+    `Posicionamento\n\n${hasPos ? totalPos : '___'} pts`,
+    `Detalhe\n\n${hasDetail ? totalDetail : '___'} pts`,
+    `Total Geral\n\n${hasTotal ? totalGeral : '___'} pts`
   ]);
 
   autoTable(doc, {
